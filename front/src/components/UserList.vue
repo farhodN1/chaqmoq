@@ -1,6 +1,7 @@
 <template>
   <div class="users">
-    <div class="user-block" v-for="user in userList" :key="user.id" @click="startChat(user.id)">
+    <!-- <h1>{{targetData}}</h1> -->
+    <div class="user-block" v-for="user in userList" :key="user.id" @click="startChat(user.id, user.username)">
       <img :src="user.profilePicture" alt="Profile Picture" class="profile-picture">
       <div class="username">{{ user.username }}</div>
     </div>
@@ -14,7 +15,7 @@ import io from 'socket.io-client';
 export default {
   data() {
     return {
-      userList: []
+      userList: [],
     };
   },
   mounted() {
@@ -26,20 +27,33 @@ export default {
         methods: ['GET', 'POST']
       }
     });
-    
   },
   methods: {
     async fetchUserList() {
+    const user_id = this.$cookies.get("user_id")
       try {
         const response = await axios.get('http://localhost:3000/userlist');
-        this.userList = response.data; // Assuming the response is an array of user objects
+        const filteredUsers = {};
+        for (const userId in response.data) {
+            if (Object.prototype.hasOwnProperty.call(response.data, userId)) {
+                if (response.data[userId].id !== user_id) {
+                    filteredUsers[userId] = response.data[userId];
+                }
+            }
+        }
+        this.userList = filteredUsers;
+
       } catch (error) {
         console.error('Error fetching user list:', error);
       }
+      
     },
-    startChat(userid){
+    startChat(userid, username){
+      this.$store.dispatch('updateTargetData', {userid, username});
+      const user_id = this.$cookies.get("user_id")
       this.socket.emit('chat', {
-          target: userid
+          target: userid,
+          host: user_id
     })
     }
   }
@@ -65,11 +79,12 @@ export default {
   font-weight: bold;
 }
 .users {
-    background: lime;
-    height: 100%;
-    width: 28%;
-    position: absolute;
+    background: yellow;
+    width: 30%;
+    height: 100vh;
+    position: relative;
     left: 0;
     padding: 1%;
+    margin: 0;
 }
 </style>

@@ -1,31 +1,14 @@
 <template>
-
-  <UserList />
-  <RightSide msg="Welcome to Your Vue.js App"/>
-  <LogIn />
-  <ProfileInfo />
-
+  <router-view></router-view>
+  <router-view name="additionalComponent"></router-view>
 </template>
 
 <script>
-import RightSide from './components/RightSide.vue'
-import UserList from "./components/UserList.vue"
-import LogIn from './components/LogIn.vue'
-import ProfileInfo from './components/ProfileInfo.vue'
 
 export default {
-  name: 'App',
-  components: {
-    UserList,
-    RightSide,
-    LogIn,
-    ProfileInfo
-  },
-  provide: {
-    isLoggedIn: true,
-    username: {un: 'exampleUser'}
-  }
+  name: 'App'
 }
+
 </script>
 
 <style>
@@ -36,7 +19,10 @@ export default {
   position: relative;
   text-align: center;
   color: #2c3e50;
-  height: 100vh;
-  background-color: blue;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: space-between;
 }
 </style>

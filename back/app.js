@@ -19,21 +19,27 @@ admin.initializeApp({
 });
 
 const database = admin.database();
+let conversationId = null
+let serderId = null
 
 // Reference to the root of your Firebase Realtime Database
 const usersRef = database.ref('/users');
 const conversationsRef = database.ref('/conversations');
-// Read data from a specific location in the database
 
+let user_id = null;
 
 
 io.on('connection', (socket) => {
-  socket.on("socket id", (nickname, id) => {
-    usersRef.child(nickname).child("socket_id").set(id);
+  console.log(socket.id)
+  socket.on("socket id", (nickname) => {
+      user_id = nickname.nickname
+      usersRef.child(nickname.nickname).child("socket_id").set(socket.id);
+      usersRef.child(nickname.nickname).child("status").set("online");
   })
   
   socket.on('disconnect', () => {
-    console.log('User disconnected');
+    console.log(user_id)
+    user_id && usersRef.child(user_id).child("status").set("offline");
   });
 
   socket.on('chat message', (msg) => {
@@ -43,13 +49,14 @@ io.on('connection', (socket) => {
 
   socket.on('chat', (msg)=>{
     let myString = msg.target + msg.host
-    let conversationId = [...myString].sort().join('');
-    const data = {conversationId: ''}
+    senderId = msg.host
+    conversationId = [...myString].sort().join('');
+    const data = {[conversationId]: ''}
     conversationsRef.child(conversationId).once('value', (snapshot) => {
       if (snapshot.exists()) {
         
       } else {
-        conversationsRef.set(data)
+        data && conversationsRef.set(data)
           .then(()=>{console.log("data added successfully")})
           .catch((err)=>console.log(err))
       }
@@ -63,14 +70,24 @@ io.on('connection', (socket) => {
 
   socket.on('private message', (data) => {
     const {recipient, message} = data;
-    const recipientSocketId = users.get(recipient);
-    if (recipientSocketId) {
-      io.to(recipientSocketId).emit('private message', {
-        sender: socket.id,
-        message: message
-      })
+    if(recipient && conversationId && senderId && message){
+      conversationsRef.child(conversationId).push({message_id: "2", sender_id: senderId, receiver_id: recipient, message: message})
     }
-    else{console.log("recipient not found")}
+    usersRef.once('value')
+      .then((snapshot) => {
+        const data = snapshot.child(recipient).val();
+        if (data.id) {
+          io.to(data.socket_id).emit('private message', {
+            sender: socket.id,
+            message: message
+          })
+        }
+        else{console.log("recipient not found")}
+      })
+      .catch((error) => {
+        console.error('Error fetching data:', error);
+      });
+    
   })
 });
 
@@ -81,6 +98,15 @@ app.get('/userlist', async (req, res) => {
     }).catch((error) => {
         console.error('Error fetching data:', error);
     });
+})
+
+app.get('/messages', async (req, res) => {
+  await conversationsRef.once('value', (snapshot) => {
+      const data = snapshot.child(conversationId).val();
+      res.send(data); 
+  }).catch((error) => {
+      console.error('Error fetching data:', error);
+  });
 })
 
 app.post('/loggedIn', async (req, res) => {
