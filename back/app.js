@@ -20,7 +20,6 @@ admin.initializeApp({
 
 const database = admin.database();
 let conversationId = null
-let serderId = null
 
 // Reference to the root of your Firebase Realtime Database
 const usersRef = database.ref('/users');
@@ -38,25 +37,24 @@ io.on('connection', (socket) => {
   })
   
   socket.on('disconnect', () => {
-    console.log(user_id)
     user_id && usersRef.child(user_id).child("status").set("offline");
   });
 
+  socket.on('respond', (msg)=>{
+    io.emit('respond', msg)
+  })
+
   socket.on('chat message', (msg) => {
-    console.log('message: ' + msg);
     io.emit('chat message', msg);
   });
 
   socket.on('chat', (msg)=>{
     let myString = msg.target + msg.host
-    senderId = msg.host
     conversationId = [...myString].sort().join('');
     const data = {[conversationId]: ''}
     conversationsRef.child(conversationId).once('value', (snapshot) => {
-      if (snapshot.exists()) {
-        
-      } else {
-        data && conversationsRef.set(data)
+      if (!snapshot.exists()){
+        data && conversationsRef.update(data)
           .then(()=>{console.log("data added successfully")})
           .catch((err)=>console.log(err))
       }
@@ -69,13 +67,13 @@ io.on('connection', (socket) => {
   })
 
   socket.on('private message', (data) => {
-    const {recipient, message} = data;
-    if(recipient && conversationId && senderId && message){
-      conversationsRef.child(conversationId).push({message_id: "2", sender_id: senderId, receiver_id: recipient, message: message})
+    const {sender, recipient, message} = data;
+    if(recipient && conversationId && sender && message){
+      conversationsRef.child(conversationId).push({sender_id: sender, receiver_id: recipient, message: message})
     }
     usersRef.once('value')
       .then((snapshot) => {
-        const data = snapshot.child(recipient).val();
+        const data = recipient && snapshot.child(recipient).val();
         if (data.id) {
           io.to(data.socket_id).emit('private message', {
             sender: socket.id,
@@ -89,9 +87,36 @@ io.on('connection', (socket) => {
       });
     
   })
+  //video call login
+  socket.on('call', (data) => {
+    const {sender, recipient} = data;
+    usersRef.once('value')
+    .then((snapshot) => {
+      const receiver = recipient && snapshot.child(recipient).val();
+      const host = recipient && snapshot.child(sender).val();
+      console.log(data)
+      if (receiver.id && host) {
+        io.to(receiver.socket_id).emit('call', host.username)
+      }
+      else{console.log("recipient not found")}
+    })
+    .catch((error) => {
+      console.error('Error fetching data:', error);
+    });
+  })
+  socket.on('offer', offer => {
+    socket.broadcast.emit('offer', offer);
+  });
+  socket.on('answer', answer => {
+    socket.broadcast.emit('answer', answer);
+  });
+  socket.on('iceCandidate', candidate => {
+    socket.broadcast.emit('iceCandidate', candidate);
+  });
 });
 
 app.get('/userlist', async (req, res) => {
+    console.log("userlist requested")
     await usersRef.once('value', (snapshot) => {
         const data = snapshot.val();
         res.send(data); 
@@ -101,29 +126,41 @@ app.get('/userlist', async (req, res) => {
 })
 
 app.get('/messages', async (req, res) => {
+  console.log("hilo")
+  // await conversationsRef.once('value', (snapshot) => {
+  //     const data = snapshot.child(conversationId).val();
+  //     data && res.send(data);
+  // }).catch((error) => {
+  //     console.error('Error fetching data:', error);
+  // });
+})
+
+app.post('/messages', async (req, res) => {
+  console.log(req.body.message)
   await conversationsRef.once('value', (snapshot) => {
-      const data = snapshot.child(conversationId).val();
-      res.send(data); 
+      const data = snapshot.child(req.body.message).val();
+      data && res.send(data);
   }).catch((error) => {
       console.error('Error fetching data:', error);
   });
 })
 
-app.post('/loggedIn', async (req, res) => {
-  console.log(req.body.nickname, req.body.picture, req.body.given_name)
+app.post('/loggedin', async (req, res) => {
   newUser = {
       id: req.body.nickname,
       username: req.body.given_name,
       profilePicture: req.body.picture,
       email: req.body.email
   }
-  console.log(newUser)
-  let childRef = usersRef.child(req.body.nickname)
-  await childRef.set(newUser)
-  res.send("the message received successfully")
+  if(req.body.nickname && req.body.nickname !== "undefined"){
+    let childRef = usersRef?.child(req.body.nickname)
+    await childRef.set(newUser)
+    res.send("the message received successfully")
+  }
+  
 })
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
   console.log("Server running on port " + PORT);

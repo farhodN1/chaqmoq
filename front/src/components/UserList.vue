@@ -20,10 +20,10 @@ export default {
   },
   mounted() {
     this.fetchUserList();
-    this.socket = io('http://localhost:3000',{
+    this.socket = io('http://localhost:5000',{
       transports: [ 'websocket' ],
       cors: {
-        origin: 'http://localhost:3000',  
+        origin: 'http://localhost:5000',  
         methods: ['GET', 'POST']
       }
     });
@@ -32,7 +32,7 @@ export default {
     async fetchUserList() {
     const user_id = this.$cookies.get("user_id")
       try {
-        const response = await axios.get('http://localhost:3000/userlist');
+        const response = await axios.get('http://localhost:5000/userlist');
         const filteredUsers = {};
         for (const userId in response.data) {
             if (Object.prototype.hasOwnProperty.call(response.data, userId)) {
@@ -42,7 +42,6 @@ export default {
             }
         }
         this.userList = filteredUsers;
-
       } catch (error) {
         console.error('Error fetching user list:', error);
       }

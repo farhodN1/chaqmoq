@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import LogIn from '../components/LogIn.vue';
-import UserList from '../components/UserList'
-import RightSide from '../components/RightSide'
+import UserList from '../components/UserList';
+import RightSide from '../components/RightSide';
 
 const routes = [
   {
