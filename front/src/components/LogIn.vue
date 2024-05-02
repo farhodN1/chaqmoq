@@ -11,7 +11,8 @@
     export default {
         data(){
             return {
-                data: null
+                data: null,
+                url: process.env.VUE_APP_URL
             }
         },
         setup(){
@@ -22,7 +23,7 @@
                     const data = user._rawValue
                     const expires = new Date();
                     expires.setDate(expires.getDate() + 30);
-                    axios.post('https://74e902ba9b8e1f7998faa95494c93dba.serveo.net/loggedin', user._rawValue)
+                    axios.post(this.url+'/loggedin', user._rawValue)
                     .then(response => {
                         // Handle success response
                         console.log('Response:', response.data);

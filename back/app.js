@@ -9,11 +9,12 @@ const io = socketIO(server);
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
+
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-const serviceAccount = require('C:\\Users\\Пользователь\\Downloads\\serviceAccountKey.json');
+const serviceAccount = require('./serviceAccountKey.json');
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     databaseURL: 'https://aiomessenger-da2d4-default-rtdb.europe-west1.firebasedatabase.app/' // URL to your Firebase Realtime Database
@@ -128,12 +129,12 @@ app.get('/userlist', async (req, res) => {
 
 app.get('/messages', async (req, res) => {
   console.log("hilo")
-  // await conversationsRef.once('value', (snapshot) => {
-  //     const data = snapshot.child(conversationId).val();
-  //     data && res.send(data);
-  // }).catch((error) => {
-  //     console.error('Error fetching data:', error);
-  // });
+  await conversationsRef.once('value', (snapshot) => {
+      const data = snapshot.child(conversationId).val();
+      data && res.send(data);
+  }).catch((error) => {
+      console.error('Error fetching data:', error);
+  });
 })
 
 app.post('/messages', async (req, res) => {

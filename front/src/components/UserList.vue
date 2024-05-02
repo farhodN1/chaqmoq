@@ -1,6 +1,5 @@
 <template>
   <div class="users">
-    <!-- <h1>{{targetData}}</h1> -->
     <div class="user-block" v-for="user in userList" :key="user.id" @click="startChat(user.id, user.username)">
       <img :src="user.profilePicture" alt="Profile Picture" class="profile-picture">
       <div class="username">{{ user.username }}</div>
@@ -16,14 +15,15 @@ export default {
   data() {
     return {
       userList: [],
+      url: process.env.VUE_APP_URL
     };
   },
   mounted() {
     this.fetchUserList();
-    this.socket = io('http://localhost:5000',{
+    this.socket = io(this.url,{
       transports: [ 'websocket' ],
       cors: {
-        origin: 'http://localhost:5000',  
+        origin: this.url,  
         methods: ['GET', 'POST']
       }
     });
@@ -32,7 +32,7 @@ export default {
     async fetchUserList() {
     const user_id = this.$cookies.get("user_id")
       try {
-        const response = await axios.get('http://localhost:5000/userlist');
+        const response = await axios.get(this.url+'/userlist');
         const filteredUsers = {};
         for (const userId in response.data) {
             if (Object.prototype.hasOwnProperty.call(response.data, userId)) {

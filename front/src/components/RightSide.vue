@@ -48,7 +48,8 @@
         remoteStream: null,
         pc: null,
         audio: true,
-        video: false
+        video: false,
+        url: process.env.VUE_APP_URL
       };
     },
     computed: {
@@ -57,10 +58,10 @@
       }
     },
     mounted() {
-      this.socket = io('http://localhost:5000',{
+      this.socket = io(this.url,{
         transports: [ 'websocket' ],
         cors: {
-          origin: 'http://localhost:5000',  
+          origin: this.url,  
           methods: ['GET', 'POST']
         }
       });
@@ -132,7 +133,7 @@
     methods: {
       async fetchData() { 
         try {
-          const response = await axios.get('http://localhost:5000/messages');
+          const response = await axios.get(this.url+'/messages');
           this.messages = response.data;
         } catch(err) {
           console.log(err);
