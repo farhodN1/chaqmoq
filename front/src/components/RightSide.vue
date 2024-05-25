@@ -10,7 +10,7 @@
         <button v-if="recipient" @click="VideoCall">video call</button>
       </div>
     </div>
-    <div class="messages">
+    <div class="messages" style="overflow-y: auto;" ref="messagesContainer">
       <div v-for="(message, index) in messages" :key="index" :class="getMessageClass(message.sender_id)">
         {{ message.message }}
       </div>
@@ -69,6 +69,8 @@
       this.socket.on('connect', () => {
         console.log('Connected to server');
       });
+
+      this.socket.on('eventName')
 
       this.socket.on('private message', () => {
         this.fetchData()
@@ -132,8 +134,11 @@
     },  
     methods: {
       async fetchData() { 
+        let myString = this.host + this.recipient.userid
+        let conversationId = [...myString].sort().join('');
         try {
-          const response = await axios.get(this.url+'/messages');
+          const response = await axios.post(this.url+'/messages', {conId: conversationId});
+          console.log(response)
           this.messages = response.data;
         } catch(err) {
           console.log(err);
@@ -194,13 +199,26 @@
         } catch (error) {
           console.error('Error starting call:', error);
         }
-      }
+      },
+      scrollToBottom() {
+            const container = this.$refs.messagesContainer;
+            container.scrollTop = container.scrollHeight;
+        }
     },
     watch: {
       async targetData(targetId){
         this.recipient = targetId
         await this.fetchData() 
-      }
+      },
+      messages: {
+            handler() {
+                // Scroll to the bottom whenever the messages array changes
+                this.$nextTick(() => {
+                    this.scrollToBottom();
+                });
+            },
+            deep: true
+        }
     }
   };
 </script>

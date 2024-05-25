@@ -21,7 +21,6 @@ admin.initializeApp({
 });
 
 const database = admin.database();
-let conversationId = null
 
 // Reference to the root of your Firebase Realtime Database
 const usersRef = database.ref('/users');
@@ -52,7 +51,7 @@ io.on('connection', (socket) => {
 
   socket.on('chat', (msg)=>{
     let myString = msg.target + msg.host
-    conversationId = [...myString].sort().join('');
+    let conversationId = [...myString].sort().join('');
     const data = {[conversationId]: ''}
     conversationsRef.child(conversationId).once('value', (snapshot) => {
       if (!snapshot.exists()){
@@ -70,14 +69,20 @@ io.on('connection', (socket) => {
 
   socket.on('private message', (data) => {
     const {sender, recipient, message} = data;
-    if(recipient && conversationId && sender && message){
+    if(recipient && sender && message){
+      let myString = sender + recipient
+      let conversationId = [...myString].sort().join('');
       conversationsRef.child(conversationId).push({sender_id: sender, receiver_id: recipient, message: message})
     }
     usersRef.once('value')
       .then((snapshot) => {
+        console.log(recipient)
+        
         const data = recipient && snapshot.child(recipient).val();
         if (data.id) {
-          io.to(data.socket_id).emit('private message', {
+
+          // io.to(data.socket_id).emit('private message', {
+            io.emit('private message', {
             sender: socket.id,
             message: message
           })
@@ -138,9 +143,9 @@ app.get('/messages', async (req, res) => {
 })
 
 app.post('/messages', async (req, res) => {
-  console.log(req.body.message)
+  console.log(req.body.conId)
   await conversationsRef.once('value', (snapshot) => {
-      const data = snapshot.child(req.body.message).val();
+      const data = snapshot.child(req.body.conId).val();
       data && res.send(data);
   }).catch((error) => {
       console.error('Error fetching data:', error);
@@ -154,6 +159,7 @@ app.post('/loggedin', async (req, res) => {
       profilePicture: req.body.picture,
       email: req.body.email
   }
+  console.log(newUser)
   if(req.body.nickname && req.body.nickname !== "undefined"){
     let childRef = usersRef?.child(req.body.nickname)
     await childRef.set(newUser)
