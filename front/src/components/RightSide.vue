@@ -1,7 +1,7 @@
 <template>
   <HoverWindow v-if="callData" :propName="callData" />
   <AnswerWindow v-if="answerData" @respond="respond" :propName="answerData" />
-  <VideoWin :appear="appear" v-if="remoteStream" :video="remoteStream" :passedFunction="startCall"/>
+  <CallWin :appear="appear" v-if="remoteStream" :video="remoteStream" :localVideo="localStream" :passedFunction="startCall"/>
   <div class="rightSide">
     <div class="targetInfo">
       <h1>{{targetData.username}}</h1>
@@ -27,13 +27,13 @@
   import axios from 'axios';
   import HoverWindow from './HoverWindow'
   import AnswerWindow from './AnswerWindow'
-  import VideoWin from './VideoWin'
+  import CallWin from './CallWin'
 
   export default {
     components: {
       HoverWindow,
       AnswerWindow,
-      VideoWin
+      CallWin
     },
     data() {
       return {
@@ -70,8 +70,6 @@
         console.log('Connected to server');
       });
 
-      this.socket.on('eventName')
-
       this.socket.on('private message', () => {
         this.fetchData()
       })
@@ -81,17 +79,13 @@
         this.answerData = ["block", sender]
       })
 
-      this.socket.on("respond", (msg)=>{
-        console.log(msg)
-      })
-
       this.socket.emit('socket id', {
         nickname: this.host
       });
 
       const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
       this.pc = new RTCPeerConnection(configuration);
-
+      console.log("peerConnection", this.pc)
       this.pc.ontrack = event => {
         this.answerData = 'none'
         this.callData = 'none'
@@ -108,7 +102,7 @@
           await this.pc.setRemoteDescription(offer);
           const answer = await this.pc.createAnswer();
           await this.pc.setLocalDescription(answer);
-          this.socket.emit('answer', answer);  
+          this.socket.emit('answer', answer);
           
         } catch (error) {
             console.error('Error handling offer:', error);
@@ -138,7 +132,6 @@
         let conversationId = [...myString].sort().join('');
         try {
           const response = await axios.post(this.url+'/messages', {conId: conversationId});
-          console.log(response)
           this.messages = response.data;
         } catch(err) {
           console.log(err);
@@ -186,6 +179,7 @@
           this.localStream.getTracks().forEach(track => this.pc.addTrack(track, this.localStream));
 
           const offer = await this.pc.createOffer();
+          console.log("the actual offer", offer)
           await this.pc.setLocalDescription(offer); 
 
           this.pc.onicecandidate = event => {

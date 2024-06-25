@@ -7,9 +7,11 @@
             <button @click="answer">answer</button>
         </div>  
         <button class="full-screen">[~]</button>
+        <!-- <audio ref="audio" :src="require('@/assets/ring.mp3')" controls autoplay></audio> -->
     </div>
 </template>
 <script>
+    console.log(window.location.pathname)
     export default{
         props: {
             propName: {
@@ -20,11 +22,11 @@
         methods: {
             decline(){
                 this.$emit('respond', "neg")
-                this.propValue = 'none'
+                this.propValue[0] = 'none'
             },
             answer(){
                 this.$emit('respond', 'pos')
-                this.propValue = 'none'
+                this.propValue[0] = 'none'
             }
         },
         data() {

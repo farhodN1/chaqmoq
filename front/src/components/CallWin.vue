@@ -1,19 +1,25 @@
 <template>
-    <div :style="{display: disappear}" class="videos">
+    <div :style="{display: disappear}" class="main">
         <div class="top-buttons">
             <button @click="makeDisappear">-</button>
             <button>[_]</button>    
             <button>x</button>
-        </div> 
-        <h2>{{remoteStream.getTracks()[0]}}</h2>
-      <video height="100%" width="100%" autoplay :srcObject="remoteStream"></video>
-      <video height="300px" width="400px" autoplay :srcObject="localStream"></video>
+        </div>
+        <div class="main-body">
+            <video class="remoteStream" height="100%" width="100%" autoplay :srcObject="remoteStream"></video>
+            <video @click="switchVideos" class="localStream" height="150px" width="250px" autoplay :srcObject="localStream"></video>
+        </div>
+      
     </div>
 </template>
 <script>
     export default{
         props: {
             video: {
+                type: Object,
+                required: true
+            },
+            localVideo: {
                 type: Object,
                 required: true
             },
@@ -27,6 +33,10 @@
         methods: {
             makeDisappear(){
                 this.disappear = "none"
+            },
+            switchVideos(){
+                this.localStream = this.remoteStream
+                this.remoteStream = this.localStream
             }
         
         },
@@ -47,6 +57,9 @@
             video(newValue){
                 this.remoteStream = newValue;
             },
+            localVideo(newValue){
+                this.localStream = newValue;
+            },
             appear(newValue){
                 this.disappear = newValue;
             }
@@ -54,16 +67,30 @@
     }
 </script>
 <style>
-    .videos {
+    .main {
         background-color: green;
         position: absolute;
-        z-index: 9999;
         height: 100%;
         width: 100%;
+        z-index: 99;
     }
-    .videos .top-buttons{
+    .main .top-buttons{
+        background-color: yellow;
+        width: 100%;
+        text-align: right;
+    }
+    .main-body{
+        background-color: #ffffff;
+        position: relative;
+        height: 100%;
+        width: 100%;
+           
+    }
+    .localStream{
         position: absolute;
-        right: 0;
-        top: 0;
+        left: 0;
     }
+    .remoteStream{
+    }
+    
 </style>

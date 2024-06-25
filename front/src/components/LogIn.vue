@@ -18,13 +18,10 @@ export default {
             console.log("initializing loggedIn function")
             const expires = new Date();
             expires.setDate(expires.getDate() + 30);
-            console.log(user._rawValue)
             axios.post(`${process.env.VUE_APP_URL}/loggedin`, user._rawValue)
                 .then(response => {
-                    // Handle success response
                     console.log("loggedin request was successful");
                     console.log('Response:', response.data);
-                    console.log("checking the existence of nickname, the result:", user._rawValue.nickname ? "positive" : "negative");
                     if (user._rawValue.nickname) {
                         console.log("saving user_id into cookies");
                         document.cookie = `user_id=${user._rawValue.nickname};expires=${expires.toUTCString()};path=/`;

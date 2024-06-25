@@ -17,7 +17,7 @@ app.use(bodyParser.json());
 const serviceAccount = require('./serviceAccountKey.json');
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    databaseURL: 'https://aiomessenger-da2d4-default-rtdb.europe-west1.firebasedatabase.app/' // URL to your Firebase Realtime Database
+    databaseURL: 'https://aiomessenger-da2d4-default-rtdb.europe-west1.firebasedatabase.app/' // URL to Firebase Realtime Database
 });
 
 const database = admin.database();
@@ -30,7 +30,7 @@ let user_id = null;
 
 
 io.on('connection', (socket) => {
-  console.log(socket.id)
+  console.log("user", socket.id, "is connected")
   socket.on("socket id", (nickname) => {
       user_id = nickname.nickname
       usersRef.child(nickname.nickname).child("socket_id").set(socket.id);
@@ -42,6 +42,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('respond', (msg)=>{
+    console.log("respond got triggered")
     io.emit('respond', msg)
   })
 
@@ -112,12 +113,15 @@ io.on('connection', (socket) => {
     });
   })
   socket.on('offer', offer => {
+    console.log("offer got triggered")
     socket.broadcast.emit('offer', offer);
   });
   socket.on('answer', answer => {
+    console.log("answer got triggered")
     socket.broadcast.emit('answer', answer);
   });
   socket.on('iceCandidate', candidate => {
+    console.log("iceCandidate in action")
     socket.broadcast.emit('iceCandidate', candidate);
   });
 });
@@ -153,15 +157,25 @@ app.post('/messages', async (req, res) => {
 })
 
 app.post('/loggedin', async (req, res) => {
-  newUser = {
+  console.log(req.body)
+  if(req.body.nickname){
+    newUser = {
       id: req.body.nickname,
       username: req.body.given_name,
       profilePicture: req.body.picture,
       email: req.body.email
+    }
+  } else {
+    newUser = {
+      id: req.body.id,
+      username: req.body.username,
+      profilePicture: req.body.profilePicture,
+      email: req.body.email
+    }
   }
   console.log(newUser)
-  if(req.body.nickname && req.body.nickname !== "undefined"){
-    let childRef = usersRef?.child(req.body.nickname)
+  if(req.body.nickname && req.body.nickname !== "undefined" || req.body.id){
+  let childRef = req.body.id ? usersRef?.child(req.body.id) : usersRef?.child(req.body.nickname)
     await childRef.set(newUser)
     res.send("the message received successfully")
   }

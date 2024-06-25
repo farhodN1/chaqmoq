@@ -11,6 +11,8 @@
     </div>
 </template>
 <script>
+    import io from 'socket.io-client';
+
     export default{
         props: {
             propName: {
@@ -20,11 +22,22 @@
         },
         data() {
             return {
-                propValue: '' 
+                propValue: '',
+                url: process.env.VUE_APP_URL
             };
         },
-        created(){
+        mounted(){
             this.propValue = this.propName;
+            this.socket = io(this.url,{
+              transports: [ 'websocket' ],
+              cors: {
+                origin: this.url,  
+                methods: ['GET', 'POST']
+              }
+            });
+            this.socket.on("respond", (msg) => {
+                if(msg) this.propValue = "none"
+            })
         },
         watch: {
             propName(newValue) {
