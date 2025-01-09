@@ -1,7 +1,9 @@
 <template>
     <div :style="{display: propValue[0]}" class="hw">
         <button class="x">x</button>
-        <h2>{{propValue[1]}} is calling</h2>
+        <h2>{{propValue[1].sender}} is calling</h2>
+        <h3>{{propValue[1].callType}}</h3>
+        <img :src="propValue[1].image">
         <div class="buttons">
             <button @click="decline">decline</button>
             <button @click="answer">answer</button>

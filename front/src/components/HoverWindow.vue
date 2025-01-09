@@ -5,7 +5,7 @@
             <button>{{propValue}}</button>
             <button>second</button>
             <button>third</button>
-            <button>forth</button>
+            <button @click="hangUp">hang up</button>
         </div>  
         <button class="full-screen">[~]</button>
     </div>
@@ -38,6 +38,11 @@
             this.socket.on("respond", (msg) => {
                 if(msg) this.propValue = "none"
             })
+        },
+        methods: {
+            hangUp() {
+                this.propValue = "none"
+            }
         },
         watch: {
             propName(newValue) {

@@ -1,7 +1,7 @@
 <template>
   <HoverWindow v-if="callData" :propName="callData" />
   <AnswerWindow v-if="answerData" @respond="respond" :propName="answerData" />
-  <CallWin :appear="appear" v-if="remoteStream" :video="remoteStream" :localVideo="localStream" :passedFunction="startCall"/>
+  <CallWin :appear="appear" @respond="respond" v-if="remoteStream" :video="remoteStream" :localVideo="localStream" :passedFunction="startCall"/>
   <div class="rightSide">
     <div class="targetInfo">
       <h1>{{targetData.username}}</h1>
@@ -74,22 +74,27 @@
         this.fetchData()
       })
 
-      this.socket.on("call", (sender) => {
-        console.log(sender)
+      this.socket.on("videoCall", (sender) => {
+        console.log("incoming video call")
+        sender.callType = "video call"
+        this.appear = "video call"
         this.answerData = ["block", sender]
       })
+      this.socket.on("audioCall", (sender) => {
+        sender.callType = "audio call"
+        this.appear = "audio call"
+        console.log("incoming audio call")
+        this.answerData = ["block", sender] 
+      })
 
-      this.socket.emit('socket id', {
-        nickname: this.host
-      });
+      if (this.host !== null) this.socket.emit('socket id', this.host);
+      else console.log(this.host)
 
       const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
       this.pc = new RTCPeerConnection(configuration);
-      console.log("peerConnection", this.pc)
       this.pc.ontrack = event => {
         this.answerData = 'none'
         this.callData = 'none'
-        this.appear = "block"
         if (event.streams && event.streams[0]) {
           this.remoteStream = event.streams[0]
           if(this.remoteStream.getTracks().length == 2) this.video = true
@@ -97,15 +102,15 @@
       };
 
       this.socket.on('offer', async offer => {
-        console.log("offer received")
         try {
+          console.log(offer.sdpMid)
           await this.pc.setRemoteDescription(offer);
           const answer = await this.pc.createAnswer();
           await this.pc.setLocalDescription(answer);
           this.socket.emit('answer', answer);
-          
+          console.log(this.pc)
         } catch (error) {
-            console.error('Error handling offer:', error);
+          console.error('Error handling offer:', error);
         }
       });
   
@@ -117,14 +122,36 @@
           console.error('Error handling answer:', error);
         }
       });
+
+      this.socket.on("respond", (msg) => {
+        if(msg) this.startCall()
+        else this.callData = "none"
+      })
   
       this.socket.on('iceCandidate', async candidate => {
+        console.log("ice candidates received", candidate)
+        new RTCIceCandidate()
         try {
-          await this.pc.addIceCandidate(candidate);
+          await this.pc.addIceCandidate(JSON.parse(candidate));
         } catch (error) {
           console.error('Error handling ICE candidate:', error);
         }
       });
+      this.socket.on("endCall", () => {
+        this.appear = "none";
+        if (this.pc) {
+          // Close any media tracks (optional, depending on your setup)
+          this.pc.getSenders().forEach(sender => sender.track.stop());
+          this.pc.getReceivers().forEach(receiver => receiver.track.stop());
+
+          // Close the RTCPeerConnection
+          this.pc.close();
+          this.pc = null;  // Clean up the object
+          console.log('Peer connection closed.');
+        }
+        this.localStream = null
+        this.remoteStream = null
+      })
     },  
     methods: {
       async fetchData() { 
@@ -154,37 +181,49 @@
       },
       respond(res){
         if(res == 'pos'){
-          this.socket.emit("respond", "true")
-          this.startCall()
+          this.socket.emit("respond", true)
         }
         if(res == 'neg'){
-          this.socket.emit("respond", "false")
+          this.socket.emit("respond", false)
+        }
+        if(res == 'endCall'){
+          this.socket.emit("endCall", {sender: this.host, recipient: this.recipient.userid})
         }
       },
-      VideoCall() {
+      VideoCall() { 
         this.callData = "block";
+        this.appear = "video call"
         this.video = true
-        this.socket.emit("call", {sender: this.host, recipient: this.recipient.userid})
+        this.socket.emit("videoCall", {sender: this.host, recipient: this.recipient.userid})
       },
       AudioCall() {
-        this.video = false
+        this.video = false 
         this.callData = "block";
-        this.socket.emit("call", {sender: this.host, recipient: this.recipient.userid})
+        this.appear = "audio call"
+        this.socket.emit("audioCall", {sender: this.host, recipient: this.recipient.userid})
       },
       async startCall(){
           try {
           const stream = await navigator.mediaDevices.getUserMedia({ video: this.video, audio: this.audio });
           console.log('stream', stream)
+
+          // Mute the local audio track to prevent hearing yourself
+          // const audioTracks = stream.getAudioTracks();
+          // audioTracks.forEach(track => {
+          //   track.enabled = false; // Mute the local audio track
+          // });
+
           this.localStream = stream;
           this.localStream.getTracks().forEach(track => this.pc.addTrack(track, this.localStream));
 
           const offer = await this.pc.createOffer();
-          console.log("the actual offer", offer)
-          await this.pc.setLocalDescription(offer); 
+
+          await this.pc.setLocalDescription(offer);
 
           this.pc.onicecandidate = event => {
+              console.log("right here", event.candidate)
               if (event.candidate) {
-                this.socket.emit('iceCandidate', event.candidate);
+                this.socket.emit('iceCandidate', JSON.stringify(event.candidate));
               }
             };
 
@@ -197,7 +236,7 @@
       scrollToBottom() {
             const container = this.$refs.messagesContainer;
             container.scrollTop = container.scrollHeight;
-        }
+      }
     },
     watch: {
       async targetData(targetId){

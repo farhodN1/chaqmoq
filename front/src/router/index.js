@@ -10,7 +10,7 @@ const routes = [
         default: UserList,
         additionalComponent: RightSide
     },
-    meta: {requiresAuth: true}
+    meta: {requiresAuth: false}
   },
   {
     path: '/login',

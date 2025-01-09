@@ -30,7 +30,7 @@ export default {
   },
   methods: {
     async fetchUserList() {
-    const user_id = this.$cookies.get("user_id")
+      const user_id = this.$cookies.get("user_id")
       try {
         const response = await axios.get(this.url+'/userlist');
         const filteredUsers = {};
@@ -60,30 +60,30 @@ export default {
 </script>
 
 <style scoped>
-.user-block {
-  background: grey;
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
-  border-radius: 20px;
-}
+  .user-block {
+    background: grey;
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    border-radius: 20px;
+  }
 
-.profile-picture {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-}
+  .profile-picture {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+  }
 
-.username {
-  font-weight: bold;
-}
-.users {
-    background: yellow;
-    width: 30%;
-    height: 100vh;
-    position: relative;
-    left: 0;
-    padding: 1%;
-    margin: 0;
-}
+  .username {
+    font-weight: bold;
+  }
+  .users {
+      background: yellow;
+      width: 30%;
+      height: 100vh;
+      position: relative;
+      left: 0;
+      padding: 1%;
+      margin: 0;
+  }
 </style>

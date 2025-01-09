@@ -7,6 +7,11 @@ import store from './store'
 
 const app = createApp(App);
 
+app.config.errorHandler = (err) => {  
+  console.err(err)
+};
+
+
 app.use(store)
 app.use(VueCookies)
 app.use(
